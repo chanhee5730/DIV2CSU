@@ -43,7 +43,7 @@ export default function MyProfilePage({
   const [helpShown, setHelpShwon] = useState(false);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [newPassword, setNewPassword] = useState<string | null>(null);
-  const [unit, setUnit] = useState<'headquarters' | 'supply' | 'medical' | 'transport' | null>(null)
+  const [unit, setUnit] = useState<'headquarters' | 'supply' | 'medical' | 'transport' | 'unclassified'>('unclassified')
 
   useLayoutEffect(() => {
     Promise.all([currentSoldier(), sn ? fetchSoldier(sn) : null]).then(
@@ -169,18 +169,18 @@ export default function MyProfilePage({
       <UnitTransfer 
         unit={unit}
         onchange={(u) => setUnit(u)}
-        disabled={!hasPermission(current!.permissions, ['Admin', 'Commander', 'UserAdmin'])}
+        disabled={isViewingMine || !hasPermission(current!.permissions, ['Admin', 'Commander', 'UserAdmin'])}
       />
       {(!isViewingMine && hasPermission(current!?.permissions, ['Admin', 'Commander'])) ? (
         <div className='pb-2'>
-          <Button href={`/points?sn=${targetSoldier.sn}`}>
+          <Button href={`/points?sn=${targetSoldier.sn}`} block>
             상점 내역 보기
           </Button>
         </div>
       ): null}
       {(!isViewingMine && hasPermission(current!?.permissions, ['Admin', 'Commander'])) ? (
         <div className='pb-2'>
-          <Button href={`/overtimes?sn=${targetSoldier.sn}`}>
+          <Button href={`/overtimes?sn=${targetSoldier.sn}`} block>
             초과근무 내역 보기
           </Button>
         </div>

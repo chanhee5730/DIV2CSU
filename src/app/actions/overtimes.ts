@@ -17,7 +17,7 @@ export async function fetchOvertime(overtimeId: string) {
     .executeTakeFirst();
 }
 
-export async function listOvertimes(sn: string, page: number = 0) {
+export async function listOvertimes(sn: string) {
   const { type } = await kysely
     .selectFrom('soldiers')
     .where('sn', '=', sn)
@@ -436,4 +436,14 @@ export async function redeemOvertime({
   } catch (e) {
     return { message: '알 수 없는 오류가 발생했습니다' };
   }
+}
+
+export async function fetchRedeemedOvertime(sn: string) {
+  return kysely
+    .selectFrom('used_overtimes')
+    .where('recorded_by', '=', sn!)
+    .leftJoin('soldiers', 'soldiers.sn', 'used_overtimes.user_id')
+    .select('soldiers.name as receiver')
+    .selectAll(['used_overtimes'])
+    .execute();
 }

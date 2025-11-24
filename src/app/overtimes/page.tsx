@@ -1,18 +1,19 @@
 import { Soldier } from '@/interfaces';
 import { PlusOutlined } from '@ant-design/icons';
-import { Divider, FloatButton } from 'antd';
-import { currentSoldier, fetchApproveOvertimes, fetchPendingOvertimes, fetchSoldier, listOvertimes} from '../actions';
+import { FloatButton } from 'antd';
+import { currentSoldier, fetchApproveOvertimes, fetchPendingOvertimes, fetchRedeemedOvertime, fetchSoldier, listOvertimes} from '../actions';
 import { hasPermission } from '../actions/utils';
 import {
   OvertimeRequestList,
   OvertimeHistoryList,
   TotalOvertimeBox,
   UsedOvertimeList,
+  RedeemedOvertimeList,
 } from './components';
 import { redirect } from 'next/navigation';
 
-async function EnlistedPage({ user, page }: { user: Soldier; page: number }) {
-  const { data, usedOvertimes } = await listOvertimes(user?.sn, page);
+async function EnlistedPage({ user }: { user: Soldier }) {
+  const { data, usedOvertimes } = await listOvertimes(user?.sn);
   return (
     <div className='flex flex-1 flex-col'>
       <TotalOvertimeBox user={user} />
@@ -33,18 +34,20 @@ async function EnlistedPage({ user, page }: { user: Soldier; page: number }) {
 
 async function NcoPage({
   user,
-  page,
   showRequest,
 }: {
   user: Soldier;
-  page: number;
   showRequest: boolean;
 }) {
-  const { data } = await listOvertimes(user?.sn, page);
+  const { data } = await listOvertimes(user?.sn);
   const request = await fetchPendingOvertimes();
+  const redeemed = await fetchRedeemedOvertime(user?.sn);
   return (
     <div className='flex flex-1 flex-col'>
       <div className='flex-1 mb-2'>
+        {hasPermission(user.permissions, ['Admin', 'Commander']) &&
+          <RedeemedOvertimeList data={redeemed}/>
+        }
         {showRequest && (
           <>
             <OvertimeRequestList type={'verify'} data={request}/>
@@ -61,19 +64,18 @@ async function NcoPage({
 
 async function ApproverPage({
   user,
-  page,
   showRequest,
 }: {
   user: Soldier;
-  page: number;
   showRequest: boolean;
 }) {
-  const { data } = await listOvertimes(user?.sn, page);
+  const { data } = await listOvertimes(user?.sn);
   const verify = await fetchPendingOvertimes();
   const approve = await fetchApproveOvertimes();
   return (
     <div className='flex flex-1 flex-col'>
       <div className='flex-1 mb-2'>
+        
         {showRequest && (
           <>
             <OvertimeRequestList type={'approve'} data={approve}/>
@@ -96,13 +98,12 @@ async function ApproverPage({
 export default async function ManagePointsPage({
   searchParams,
 }: {
-  searchParams: { sn?: string; page?: string };
+  searchParams: { sn?: string };
 }) {
   const [user, current] = await Promise.all([
     searchParams.sn ? fetchSoldier(searchParams.sn) : currentSoldier(),
     currentSoldier(),
   ]);
-  const page = parseInt(searchParams?.page ?? '1', 10) || 1;
 
   if(searchParams.sn && !hasPermission(current.permissions, ['Admin', 'Commander', 'Approver'])){
     redirect('/overtimes')
@@ -111,7 +112,6 @@ export default async function ManagePointsPage({
     return (
       <EnlistedPage
         user={user as any}
-        page={page}
       />
     );
   }
@@ -119,7 +119,6 @@ export default async function ManagePointsPage({
     return (
       <ApproverPage
         user={user as any}
-        page={page}
         showRequest={current.sn === user.sn}
       />
     )
@@ -127,7 +126,6 @@ export default async function ManagePointsPage({
   return (
     <NcoPage
       user={user as any}
-      page={page}
       showRequest={current.sn === user.sn}
     />
   );

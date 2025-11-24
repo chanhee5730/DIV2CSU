@@ -390,3 +390,14 @@ export async function redeemPoint({
 export async function fetchPointTemplates() {
   return kysely.selectFrom('point_templates').selectAll().execute();
 }
+
+export async function fetchRedeemedPoint(sn: string) {
+  return kysely
+    .selectFrom('used_points')
+    .where('recorded_by', '=', sn!)
+    .leftJoin('soldiers', 'soldiers.sn', 'used_points.user_id')
+    .orderBy('created_at desc')
+    .select('soldiers.name as receiver')
+    .selectAll(['used_points'])
+    .execute();
+}
